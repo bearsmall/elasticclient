@@ -9,8 +9,8 @@ public class OpenSource {
     String version;         //受影响的软件及版本号
     String description;     //软件/组件基本描述
     String href;            //连接
-    String current;        //漏洞目前状况
-    String patch;          //漏洞补丁
+    String current;         //漏洞目前状况
+    String patch;           //漏洞补丁
     Integer type;           //软件类型（1：开源工具、2：开源基础软件、3：开源组件
 
     public OpenSource(String cnvd, String cve, String core, String date, String level, String version, String description, String href, String current, String patch, Integer type) {
