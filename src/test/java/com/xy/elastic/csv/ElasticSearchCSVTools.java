@@ -21,7 +21,7 @@ import java.util.Map;
 public class ElasticSearchCSVTools {
     private String HOST = "10.103.245.220";      //ES所在HOST
     private Integer PORT = 9300;                //ES端口（9300是客户端端口，9200是HTTP端口）
-    private String indexName = "snyk";          //索引名
+    private String indexName = "cnvd";          //索引名
     private String indexType = "info";          //索引名
     TransportClient client;
 
