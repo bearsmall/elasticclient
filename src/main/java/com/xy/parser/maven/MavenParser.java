@@ -106,7 +106,7 @@ public class MavenParser {
                 if("true".equals(dependency.getOptional())){
                     continue;
                 }
-                if(dependency.getScope()==null||dependency.getScope().equalsIgnoreCase("compile")) {
+                if(dependency.getScope()==null||dependency.getScope().equalsIgnoreCase("compile")||dependency.getScope().equalsIgnoreCase("runtime")) {
                     extractTrueParams(model,dependency);
                     String groupId = dependency.getGroupId().trim();
                     String artifactId = dependency.getArtifactId().trim();

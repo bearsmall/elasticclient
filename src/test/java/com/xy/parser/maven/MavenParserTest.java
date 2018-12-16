@@ -13,8 +13,11 @@ public class MavenParserTest {
 
     @Test
     public void test1() throws IOException {
+        Long start = System.currentTimeMillis();
         MavenParser mavenParser = new MavenParser();
-        mavenParser.parse("D:\\cert\\pom.xml");
+        mavenParser.parse("D:\\Users\\bearsmall\\IdeaProjects\\cncert-cmp\\pom.xml");
+        Long end = System.currentTimeMillis();
+        System.out.println(end-start);
         List<JavaDependency> javaDependencyList = mavenParser.getJavaDependencyTree();
         Set<JavaDependency> javaDependencySet = mavenParser.getJavaDependencySet();
         System.out.println(javaDependencyList);
