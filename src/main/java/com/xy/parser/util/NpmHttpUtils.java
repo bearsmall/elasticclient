@@ -1,7 +1,4 @@
-package com.xy.parser.npm.util;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+package com.xy.parser.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,14 +6,15 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
-public class HttpUtils {
+public class NpmHttpUtils {
+    private static String NPM_CENTER_REMOTE = "https://registry.npmjs.cf";  //npm远程API查询地址
+    private static String NPM_CENTER_LOCAL = "";   //TODO
 
-    public static String getJsonContent(String urlStr) {
+    public static String getJsonContent(String npmPath) {
+        String npmRemotePath = NPM_CENTER_REMOTE+"/"+npmPath;
         try {// 获取HttpURLConnection连接对象
-            URL url = new URL(urlStr);
+            URL url = new URL(npmRemotePath);
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
             // 设置连接属性
             httpConn.setConnectTimeout(3000);

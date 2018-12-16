@@ -2,14 +2,12 @@ package com.xy.parser.npm;
 
 import com.alibaba.fastjson.JSON;
 import com.xy.parser.npm.item.NpmDependency;
-import com.xy.parser.npm.util.HttpUtils;
+import com.xy.parser.util.NpmHttpUtils;
 
 import java.util.*;
 
 
 public class NpmParser {
-    private String NPM_CENTER_REMOTE = "https://registry.npmjs.cf";  //npm远程API查询地址
-    private String NPM_CENTER_LOCAL = "";   //TODO
     private List<NpmDependency> npmDependencyList = new ArrayList<>();
     private Set<NpmDependency> npmDependencySet = new HashSet<>();
 
@@ -34,7 +32,7 @@ public class NpmParser {
     }
 
     private List<NpmDependency> iterateChildren(String name_,String version_) {
-        String json = HttpUtils.getJsonContent(NPM_CENTER_REMOTE+"/"+name_+"/"+version_);
+        String json = NpmHttpUtils.getJsonContent(name_+"/"+version_);
         Map maps = (Map)JSON.parse(json);
         Map mapList = (Map) maps.get("dependencies");
         List<NpmDependency> dependencies = new ArrayList<NpmDependency>();
