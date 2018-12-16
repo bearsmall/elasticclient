@@ -1,6 +1,7 @@
 package com.xy.parser.npm.item;
 
 import java.util.List;
+import java.util.Objects;
 
 public class NpmDependency {
     private String name;
@@ -34,5 +35,19 @@ public class NpmDependency {
 
     public void setDependencies(List<NpmDependency> dependencies) {
         this.dependencies = dependencies;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NpmDependency that = (NpmDependency) o;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, version);
     }
 }
