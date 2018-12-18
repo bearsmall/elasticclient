@@ -73,7 +73,7 @@ public class ElasticSearchCSVTools {
 
     public List<OpenSource> readOpenSource(String csvFilePath, Integer type) throws IOException {
         ArrayList<String[]> csvFileList = new ArrayList<String[]>();
-        CsvReader csvReader = new CsvReader(csvFilePath,',', Charset.forName("utf-8"));
+        CsvReader csvReader = new CsvReader(csvFilePath,',', Charset.forName("gbk"));
         csvReader.readHeaders();
         while (csvReader.readRecord()){
             csvFileList.add(csvReader.getValues());
