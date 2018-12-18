@@ -9,8 +9,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.*;
 
 public class MavenParser {
@@ -205,7 +203,7 @@ public class MavenParser {
      * @return
      */
     private String getPomPath(JavaDependency javaDependency) {
-        return javaDependency.getGroupId().replace('.','/')+"/"+javaDependency.getArtifactId().replace('.','/')+"/"+javaDependency.getVersion()+"/";
+        return javaDependency.getGroupId().replace('.','/')+"/"+javaDependency.getArtifactId()+"/"+javaDependency.getVersion()+"/";
     }
 
     /**
@@ -214,7 +212,7 @@ public class MavenParser {
      * @return
      */
     private String getPomName(JavaDependency javaDependency) {
-        return javaDependency.getArtifactId().replace('.','/')+"-"+javaDependency.getVersion()+".pom";
+        return javaDependency.getArtifactId()+"-"+javaDependency.getVersion()+".pom";
     }
 
 }
