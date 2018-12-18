@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.*;
 
 public class MavenParserTest {
 
@@ -15,7 +14,7 @@ public class MavenParserTest {
     public void test1() throws IOException {
         Long start = System.currentTimeMillis();
         MavenParser mavenParser = new MavenParser();
-        mavenParser.parse("D:\\Users\\bearsmall\\IdeaProjects\\cncert-cmp\\pom.xml");
+        mavenParser.parse("D:\\Users\\bearsmalll\\IdeaProjects\\cncert-cmp\\pom.xml");
         Long end = System.currentTimeMillis();
         System.out.println(end-start);
         List<JavaDependency> javaDependencyList = mavenParser.getJavaDependencyTree();

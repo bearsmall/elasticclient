@@ -106,8 +106,8 @@ public class MavenParser {
                 }
                 if(dependency.getScope()==null||dependency.getScope().equalsIgnoreCase("compile")||dependency.getScope().equalsIgnoreCase("runtime")) {
                     extractTrueParams(model,dependency);
-                    String groupId = dependency.getGroupId().trim();
-                    String artifactId = dependency.getArtifactId().trim();
+                    String groupId = dependency.getGroupId();
+                    String artifactId = dependency.getArtifactId();
                     String version = dependency.getVersion();
                     if(exclusionSet!=null&&exclusionSet.contains(groupId+"$"+artifactId)){
                         continue;
@@ -203,6 +203,9 @@ public class MavenParser {
      * @return
      */
     private String getPomPath(JavaDependency javaDependency) {
+        if(javaDependency.getGroupId()==null){
+            return "";
+        }
         return javaDependency.getGroupId().replace('.','/')+"/"+javaDependency.getArtifactId()+"/"+javaDependency.getVersion()+"/";
     }
 
