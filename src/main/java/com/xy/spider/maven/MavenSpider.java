@@ -13,13 +13,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 public class MavenSpider {
 
-    private static String basePath = "org/springframework/batch/";
+    private static String basePath = "org/springframework/boot/";
 
 
     public static void main(String[] args) {
@@ -29,7 +28,11 @@ public class MavenSpider {
     private static void iteratePath(String basePath) {
         String page = sendGet(PomHttpUtils.MAVEN_CENTER_REMOTE+basePath);
         Document doc = Jsoup.parse(page);   //得到document对象
-        Element feedlist = doc.select("#contents").get(0); // 获取父级元素
+        Elements elements = doc.select("#contents");
+        if(elements==null){
+            return;
+        }
+        Element feedlist = elements.get(0); // 获取父级元素
         Elements alist = feedlist.select("a");
         List<String> hrefs = alist.eachAttr("href");
         for(int i=1;i<hrefs.size();i++){
