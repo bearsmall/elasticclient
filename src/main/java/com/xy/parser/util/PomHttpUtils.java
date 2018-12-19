@@ -2,11 +2,12 @@ package com.xy.parser.util;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 public class PomHttpUtils {
-    private static String MAVEN_CENTER_REMOTE = "http://central.maven.org/maven2/";         //MAVEN中央仓库远程地址
-    private static String MAVEN_CENTER_LOCAL = "D:\\cert\\";                                  //MAVEN中央本地POM文件存储路径（缓存）
+    public static String MAVEN_CENTER_REMOTE = "http://central.maven.org/maven2/";         //MAVEN中央仓库远程地址
+    public static String MAVEN_CENTER_LOCAL = "D:\\cert\\";                                  //MAVEN中央本地POM文件存储路径（缓存）
 
     /**
      * 下载pom文件
@@ -48,6 +49,43 @@ public class PomHttpUtils {
                 return null;
             }
             System.out.println("info:"+pomName+" download success");
+        }
+        return localFile;
+    }
+
+    public static File downloadFile(String fullPomName) throws IOException {
+        File localFile = new File(MAVEN_CENTER_LOCAL+fullPomName);
+        if(!localFile.exists()) {
+            URL url = new URL(MAVEN_CENTER_REMOTE + fullPomName);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            //设置超时间为3秒
+            conn.setConnectTimeout(1000);
+            //防止屏蔽程序抓取而返回403错误
+            conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+            InputStream inputStream = null;
+            try {
+                //得到输入流
+                inputStream = conn.getInputStream();
+                //获取自己数组
+                byte[] getData = readInputStream(inputStream);
+                //文件保存位置
+                File saveDir = localFile.getParentFile();
+                if (!saveDir.exists()) {
+                    saveDir.mkdirs();
+                }
+                FileOutputStream fos = new FileOutputStream(localFile);
+                fos.write(getData);
+                if (fos != null) {
+                    fos.close();
+                }
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }catch (Exception e){
+                System.out.println(e);
+                return null;
+            }
+            System.out.println("info:"+fullPomName+" download success");
         }
         return localFile;
     }
