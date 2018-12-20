@@ -26,7 +26,7 @@ public class MavenSpider {
     }
 
     private static void iteratePath(String basePath) {
-        String page = sendGet(PomHttpUtils.MAVEN_CENTER_REMOTE+basePath);
+        String page = sendGet(PomHttpUtils.MAVEN_CENTER_REMOTES[0]+basePath);
         Document doc = Jsoup.parse(page);   //得到document对象
         Elements elements = doc.select("#contents");
         if(elements==null){

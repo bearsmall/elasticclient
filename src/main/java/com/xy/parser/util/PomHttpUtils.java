@@ -30,8 +30,10 @@ public class PomHttpUtils {
     public static File downloadFile(String pomPath, String pomName) throws IOException {
         File localFile = new File(MAVEN_CENTER_LOCAL+pomPath+pomName);
         boolean flag = false;
+        String remote = null;
         if(!localFile.exists()) {
             for(String REMOTEURL:MAVEN_CENTER_REMOTES){
+                remote = REMOTEURL;
                 URL url = new URL(REMOTEURL + pomPath + pomName);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 //设置超时间为3秒
@@ -60,11 +62,11 @@ public class PomHttpUtils {
                     flag = true;
                     break;
                 }catch (Exception e){
-                    System.out.println(e);
+                    System.out.println(e+">>"+remote);
                 }
             }
             if(flag) {
-                System.out.println("info:" + pomName + " download success");
+                System.out.println("info:" + pomName + " download success from:"+remote);
             }
         }
         return localFile;

@@ -190,7 +190,7 @@ public class MavenParser {
         String pomPath = getPomPath(javaDependency);
         String pomName = getPomName(javaDependency);
         File localFile = PomHttpUtils.downloadFile(pomPath, pomName);
-        if (localFile == null){
+        if (localFile == null||!localFile.exists()){
             return null;
         }
         //递归解析子层级依赖树
