@@ -18,7 +18,7 @@ import java.util.List;
 
 public class MavenSpider {
 
-    private static String basePath = "org/springframework/boot/";
+    private static String basePath = "org/springframework/cloud/";
 
 
     public static void main(String[] args) {
