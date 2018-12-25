@@ -15,7 +15,7 @@ public class MavenParserTest {
     public void test1() throws IOException {
         Long start = System.currentTimeMillis();
         MavenParser mavenParser = new MavenParser();
-        mavenParser.parse("D:\\Users\\bearsmall\\IdeaProjects\\pmd");
+        mavenParser.parse("D:\\Users\\bearsmall\\IdeaProjects\\pmd\\pmd-jsp\\pom.xml");
         Long end = System.currentTimeMillis();
         System.out.println(end-start);
         Map javaDependencyList = mavenParser.getJavaDependencyTree();

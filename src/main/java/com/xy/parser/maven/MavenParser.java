@@ -67,6 +67,10 @@ public class MavenParser {
         }
     }
 
+    /**
+     * 迭代过滤出项目中所包含的所有的pom.xml文件，提取其中的参数列表以及dependencyManagement对象
+     * @param file
+     */
     private void iteratePomFile(File file){
         if(file==null||!file.exists()){
             return;
@@ -108,89 +112,6 @@ public class MavenParser {
     }
 
     /**
-     * 递归解析可变参数
-     * @param pomPath
-     * @param deep
-     * @return
-     */
-    private Properties extractProperties(Set exclusionSet,String pomPath,int deep) {
-        Properties ps = new Properties();
-        MavenXpp3Reader reader = new MavenXpp3Reader();
-        Model model = null;
-        try {
-            model = reader.read(new FileReader(pomPath));
-            Properties properties =  model.getProperties();
-            if(properties!=null&&properties.size()>0&&deep>0) {
-                ps.putAll(properties);
-            }
-            DependencyManagement dependencyManagement = model.getDependencyManagement();
-            if(dependencyManagement!=null){
-                for(Dependency dependency:dependencyManagement.getDependencies()){
-                    versionMap.put(dependency.getGroupId()+"."+dependency.getArtifactId()+".version",dependency.getVersion());
-                }
-            }
-            Parent parent = model.getParent();
-            if(deep>0){//第一层中有Parent的情况需要特殊考虑（说明是多模块的项目）【在项目本身中包含，不在maven中央仓库中】放到最初从项目目录中提取pom文件时进行
-                // 下面是非第一层中的parent标签
-                if (parent != null&&parent.getGroupId()!=null&&parent.getArtifactId()!=null&&parent.getVersion()!=null) {
-                    Dependency dependency = new Dependency();
-                    dependency.setGroupId(parent.getGroupId());
-                    dependency.setArtifactId(parent.getArtifactId());
-                    dependency.setVersion(parent.getVersion());
-                    extractTrueParams(model,dependency);
-                    JavaDependency javaDependency = new JavaDependency(dependency.getGroupId(),dependency.getArtifactId(),dependency.getVersion());
-                    String path = getPomPath(javaDependency);
-                    String name = getPomName(javaDependency);
-                    File localFile = PomHttpUtils.downloadFile(path, name);
-                    if (localFile == null || !localFile.exists()) {
-                        return null;
-                    }
-                    Properties pro = extractProperties(null,localFile.getAbsolutePath(),++deep);
-                    if(pro!=null&&pro.size()>0) {
-                        ps.putAll(pro);
-                    }
-                }
-            }
-            for(Dependency d: model.getDependencies()){
-                if(d.getGroupId()!=null&&d.getArtifactId()!=null&&d.getVersion()!=null) {
-                    extractTrueParams(model,d);
-                    if(exclusionSet!=null&&exclusionSet.contains(d.getGroupId()+"$"+d.getArtifactId())){
-                        continue;
-                    }
-                    JavaDependency jd = new JavaDependency(d.getGroupId(), d.getArtifactId(), d.getVersion());
-                    String path = getPomPath(jd);
-                    String name = getPomName(jd);
-                    File localFile = PomHttpUtils.downloadFile(path, name);
-                    if (localFile == null || !localFile.exists()) {
-                        return null;
-                    }
-                    if (!javaDependencySet.contains(jd)) {
-                        javaDependencySet.add(jd);
-                        itemMap.put(jd.getGroupId()+"$"+jd.getArtifactId()+"$"+jd.getGroupId(),jd);
-                        List<Exclusion> exclusionList = d.getExclusions();
-                        Set<String> set = null;
-                        if (exclusionList != null) {
-                            set = new HashSet<>();
-                            for (Exclusion exclusion : exclusionList) {
-                                set.add(exclusion.getGroupId() + "$" + exclusion.getArtifactId());
-                            }
-                        }
-                        Properties pro = extractProperties(set, localFile.getAbsolutePath(), ++deep);
-                        if (pro != null && pro.size() > 0) {
-                            ps.putAll(pro);
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        }
-        return ps;
-    }
-
-    /**
      * 获得pom.xml文件的依赖树【递归以获取深层级依赖】
      * @param exclusionSet 不包含的组件集合（字符形存储格式：groupId$artifactId）
      * @param pomPath  pom.xml文件本地路径
@@ -209,17 +130,17 @@ public class MavenParser {
             model = reader.read(new FileReader(pomPath));
             javaDependencies = new ArrayList<JavaDependency>();
             Properties pro =  model.getProperties();
-            if(pro!=null&&pro.size()>0&&deep>0) {
+            if(pro!=null&&pro.size()>0&&deep>0) {//提取参数列表
                 properties.putAll(pro);
             }
             DependencyManagement dependencyManagement = model.getDependencyManagement();
-            if(dependencyManagement!=null){
+            if(dependencyManagement!=null){//提取dependencyManagement对象
                 for(Dependency dependency:dependencyManagement.getDependencies()){
                     versionMap.put(dependency.getGroupId()+"."+dependency.getArtifactId()+".version",dependency.getVersion());
                 }
             }
             Parent parent = model.getParent();
-            if (parent != null&&parent.getGroupId()!=null&&parent.getArtifactId()!=null&&parent.getVersion()!=null) {
+            if (parent != null&&parent.getGroupId()!=null&&parent.getArtifactId()!=null&&parent.getVersion()!=null) {//提取parent
                 Dependency dependency = new Dependency();
                 dependency.setGroupId(parent.getGroupId());
                 dependency.setArtifactId(parent.getArtifactId());
@@ -228,7 +149,7 @@ public class MavenParser {
                 JavaDependency javaDependency = new JavaDependency(dependency.getGroupId(),dependency.getArtifactId(),dependency.getVersion());
                 iterateChildren(null,javaDependency,deep);
             }
-            for(Dependency dependency:model.getDependencies()){
+            for(Dependency dependency:model.getDependencies()){//提取dependency
                 if("true".equals(dependency.getOptional())){
                     continue;
                 }
@@ -244,7 +165,7 @@ public class MavenParser {
                         System.out.println("empty version!");
                     }
                     JavaDependency javaDependency = new JavaDependency(groupId,artifactId,version);
-                    if (!javaDependencySet.contains(javaDependency)) {
+                    if (!javaDependencySet.contains(javaDependency)) {//是否以及解析过
                         javaDependencySet.add(javaDependency);
                         itemMap.put(javaDependency.getGroupId()+"$"+javaDependency.getArtifactId()+"$"+javaDependency.getGroupId(),javaDependency);
                         List<Exclusion> exclusionList = dependency.getExclusions();
