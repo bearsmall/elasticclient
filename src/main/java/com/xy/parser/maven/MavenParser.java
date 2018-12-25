@@ -10,30 +10,15 @@ import java.io.*;
 import java.util.*;
 
 public class MavenParser {
-    private String pomPath;                                                              //pom.xml文件路径
+    private List<String> pomPaths = new ArrayList<>();                                   //项目包含的pom.xml文件列表【可能不止一个pom文件】
     private Set<JavaDependency> javaDependencySet = new HashSet<>();                    //解析结果树（省略根节点）
-    private List<JavaDependency> javaDependencyTree = new ArrayList<>();                        //解析结果集合
-    private int deepDefault = 8;                                                        //递归最大深度
-    private Properties properties;                                                      //可变参数
+    private Map<String,JavaDependency> itemMap = new HashMap<>();                          //JavaDependency对应关系
+    private Map<String,List<JavaDependency>> javaDependencyTree = new HashMap<>();      //解析结果集合
+    private int deepDefault = 8;                                                         //递归最大深度
+    private Properties properties = new Properties();                                    //可变参数
+    private Map<String,String> versionMap = new HashMap();                               //可变参数
 
     public MavenParser() {
-    }
-
-    public MavenParser(String pomPath, int deep) {
-        this.pomPath = pomPath;
-        this.deepDefault = deep;
-    }
-
-    public MavenParser(String pomPath) {
-        this.pomPath = pomPath;
-    }
-
-    public String getPomPath() {
-        return pomPath;
-    }
-
-    public void setPomPath(String pomPath) {
-        this.pomPath = pomPath;
     }
 
     public int getDeepDefault() {
@@ -52,33 +37,73 @@ public class MavenParser {
         this.javaDependencySet = javaDependencySet;
     }
 
-    public List<JavaDependency> getJavaDependencyTree() {
+    public Map<String, List<JavaDependency>> getJavaDependencyTree() {
         return javaDependencyTree;
     }
 
-    public void setJavaDependencyTree(List<JavaDependency> javaDependencyTree) {
+    public void setJavaDependencyTree(Map<String, List<JavaDependency>> javaDependencyTree) {
         this.javaDependencyTree = javaDependencyTree;
     }
 
-
-    public void parse(String pomPath){
-        try {
-            javaDependencyTree = getDependencyTree(pomPath);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void parse(String projectPath){
+        iteratePomFile(new File(projectPath));
+        for(String pomPath:pomPaths) {
+            try {
+                javaDependencyTree.put(pomPath,getDependencyTree(pomPath));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void parse(Set exclusionSet, String pomPath, int deep){
-        try {
-            javaDependencyTree = getDependencyTree(exclusionSet,pomPath,deep);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void parse(Set exclusionSet, String projectPath, int deep){
+        iteratePomFile(new File(projectPath));
+        for(String pomPath:pomPaths) {
+            try {
+                javaDependencyTree.put(pomPath,getDependencyTree(exclusionSet, pomPath, deep));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
+
+    private void iteratePomFile(File file){
+        if(file==null||!file.exists()){
+            return;
+        }
+        if(file.isDirectory()){
+            File[] files = file.listFiles();
+            for(File f: files){
+                iteratePomFile(f);
+            }
+        }else if(file.isFile()){
+            String fileName = file.getName();
+            if(fileName.equals("pom.xml")) {
+                pomPaths.add(file.getAbsolutePath());
+                MavenXpp3Reader reader = new MavenXpp3Reader();
+                Model model = null;
+                try {
+                    model = reader.read(new FileReader(file.getAbsoluteFile()));
+                    Properties pro =  model.getProperties();
+                    properties.putAll(pro);
+                    DependencyManagement dependencyManagement = model.getDependencyManagement();
+                    if(dependencyManagement!=null){
+                        for(Dependency dependency:dependencyManagement.getDependencies()){
+                            extractTrueParams(model,dependency);
+                            versionMap.put(dependency.getGroupId()+"."+dependency.getArtifactId()+".version",dependency.getVersion());
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
 
     private List<JavaDependency> getDependencyTree(String pomPath) throws IOException{
-        properties = extractProperties(pomPath,0);
         return getDependencyTree(null,pomPath,deepDefault);
     }
 
@@ -88,29 +113,50 @@ public class MavenParser {
      * @param deep
      * @return
      */
-    private Properties extractProperties(String pomPath,int deep) {
+    private Properties extractProperties(Set exclusionSet,String pomPath,int deep) {
         Properties ps = new Properties();
         MavenXpp3Reader reader = new MavenXpp3Reader();
         Model model = null;
         try {
             model = reader.read(new FileReader(pomPath));
             Properties properties =  model.getProperties();
-            ps.putAll(properties);
+            if(properties!=null&&properties.size()>0&&deep>0) {
+                ps.putAll(properties);
+            }
+            DependencyManagement dependencyManagement = model.getDependencyManagement();
+            if(dependencyManagement!=null){
+                for(Dependency dependency:dependencyManagement.getDependencies()){
+                    versionMap.put(dependency.getGroupId()+"."+dependency.getArtifactId()+".version",dependency.getVersion());
+                }
+            }
             Parent parent = model.getParent();
-            if(deep>0) {//暂时不考虑第一层的Parent
+            if(deep>0){//第一层中有Parent的情况需要特殊考虑（说明是多模块的项目）【在项目本身中包含，不在maven中央仓库中】放到最初从项目目录中提取pom文件时进行
+                // 下面是非第一层中的parent标签
                 if (parent != null&&parent.getGroupId()!=null&&parent.getArtifactId()!=null&&parent.getVersion()!=null) {
-                    JavaDependency javaDependency = new JavaDependency(parent.getGroupId(),parent.getArtifactId(),parent.getVersion());
+                    Dependency dependency = new Dependency();
+                    dependency.setGroupId(parent.getGroupId());
+                    dependency.setArtifactId(parent.getArtifactId());
+                    dependency.setVersion(parent.getVersion());
+                    extractTrueParams(model,dependency);
+                    JavaDependency javaDependency = new JavaDependency(dependency.getGroupId(),dependency.getArtifactId(),dependency.getVersion());
                     String path = getPomPath(javaDependency);
                     String name = getPomName(javaDependency);
                     File localFile = PomHttpUtils.downloadFile(path, name);
                     if (localFile == null || !localFile.exists()) {
                         return null;
                     }
-                    ps.putAll(extractProperties(localFile.getAbsolutePath(),++deep));
+                    Properties pro = extractProperties(null,localFile.getAbsolutePath(),++deep);
+                    if(pro!=null&&pro.size()>0) {
+                        ps.putAll(pro);
+                    }
                 }
             }
             for(Dependency d: model.getDependencies()){
                 if(d.getGroupId()!=null&&d.getArtifactId()!=null&&d.getVersion()!=null) {
+                    extractTrueParams(model,d);
+                    if(exclusionSet!=null&&exclusionSet.contains(d.getGroupId()+"$"+d.getArtifactId())){
+                        continue;
+                    }
                     JavaDependency jd = new JavaDependency(d.getGroupId(), d.getArtifactId(), d.getVersion());
                     String path = getPomPath(jd);
                     String name = getPomName(jd);
@@ -118,7 +164,22 @@ public class MavenParser {
                     if (localFile == null || !localFile.exists()) {
                         return null;
                     }
-                    ps.putAll(extractProperties(localFile.getAbsolutePath(), ++deep));
+                    if (!javaDependencySet.contains(jd)) {
+                        javaDependencySet.add(jd);
+                        itemMap.put(jd.getGroupId()+"$"+jd.getArtifactId()+"$"+jd.getGroupId(),jd);
+                        List<Exclusion> exclusionList = d.getExclusions();
+                        Set<String> set = null;
+                        if (exclusionList != null) {
+                            set = new HashSet<>();
+                            for (Exclusion exclusion : exclusionList) {
+                                set.add(exclusion.getGroupId() + "$" + exclusion.getArtifactId());
+                            }
+                        }
+                        Properties pro = extractProperties(set, localFile.getAbsolutePath(), ++deep);
+                        if (pro != null && pro.size() > 0) {
+                            ps.putAll(pro);
+                        }
+                    }
                 }
             }
         } catch (IOException e) {
@@ -147,6 +208,26 @@ public class MavenParser {
         try {
             model = reader.read(new FileReader(pomPath));
             javaDependencies = new ArrayList<JavaDependency>();
+            Properties pro =  model.getProperties();
+            if(pro!=null&&pro.size()>0&&deep>0) {
+                properties.putAll(pro);
+            }
+            DependencyManagement dependencyManagement = model.getDependencyManagement();
+            if(dependencyManagement!=null){
+                for(Dependency dependency:dependencyManagement.getDependencies()){
+                    versionMap.put(dependency.getGroupId()+"."+dependency.getArtifactId()+".version",dependency.getVersion());
+                }
+            }
+            Parent parent = model.getParent();
+            if (parent != null&&parent.getGroupId()!=null&&parent.getArtifactId()!=null&&parent.getVersion()!=null) {
+                Dependency dependency = new Dependency();
+                dependency.setGroupId(parent.getGroupId());
+                dependency.setArtifactId(parent.getArtifactId());
+                dependency.setVersion(parent.getVersion());
+                extractTrueParams(model,dependency);
+                JavaDependency javaDependency = new JavaDependency(dependency.getGroupId(),dependency.getArtifactId(),dependency.getVersion());
+                iterateChildren(null,javaDependency,deep);
+            }
             for(Dependency dependency:model.getDependencies()){
                 if("true".equals(dependency.getOptional())){
                     continue;
@@ -165,6 +246,7 @@ public class MavenParser {
                     JavaDependency javaDependency = new JavaDependency(groupId,artifactId,version);
                     if (!javaDependencySet.contains(javaDependency)) {
                         javaDependencySet.add(javaDependency);
+                        itemMap.put(javaDependency.getGroupId()+"$"+javaDependency.getArtifactId()+"$"+javaDependency.getGroupId(),javaDependency);
                         List<Exclusion> exclusionList = dependency.getExclusions();
                         Set<String> set =null;
                         if(exclusionList!=null){
@@ -174,6 +256,9 @@ public class MavenParser {
                             }
                         }
                         javaDependency.setChildren(iterateChildren(set,javaDependency, deep));
+                        javaDependencies.add(javaDependency);
+                    }else {
+                        javaDependency =  itemMap.get(javaDependency.getGroupId()+"$"+javaDependency.getArtifactId()+"$"+javaDependency.getGroupId());
                         javaDependencies.add(javaDependency);
                     }
                 }
@@ -210,6 +295,14 @@ public class MavenParser {
                 version = properties.getProperty(artifactId+".version");
             }
         }
+        if(artifactId.equals("javacc")){
+            System.out.println("hello");
+        }
+        if(version==null){
+            if(versionMap!=null) {
+                version = versionMap.get(groupId + "." + artifactId + ".version");
+            }
+        }
         if(version==null||version.equals("${project.version}")){
             version = model.getVersion();
             if(version == null){
@@ -217,13 +310,13 @@ public class MavenParser {
             }
         }
         if(groupId.startsWith("${")){
-            groupId = model.getProperties().getProperty(groupId.substring(2,groupId.length()-1).trim());
+            groupId = properties.getProperty(groupId.substring(2,groupId.length()-1).trim());
         }
         if(artifactId.startsWith("${")){
-            artifactId = model.getProperties().getProperty(artifactId.substring(2,artifactId.length()-1).trim());
+            artifactId = properties.getProperty(artifactId.substring(2,artifactId.length()-1).trim());
         }
         if(version.startsWith("${")){
-            version = model.getProperties().getProperty(version.substring(2,version.length()-1).trim());
+            version = properties.getProperty(version.substring(2,version.length()-1).trim());
         }
         dependency.setArtifactId(artifactId);
         dependency.setGroupId(groupId);

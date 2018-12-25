@@ -9,14 +9,14 @@ import java.util.List;
 
 public class PomHttpUtils {
     public static String[] MAVEN_CENTER_REMOTES = new String[]{
-            "http://central.maven.org/maven2/",
-            "http://jcenter.bintray.com/",
-            "https://oss.sonatype.org/content/repositories/releases/",
-            "http://repo.spring.io/plugins-release/",
-            "http://repo.spring.io/libs-milestone/",
-            "http://repo.hortonworks.com/content/repositories/releases/",
-            "https://maven.atlassian.com/content/repositories/atlassian-public/",
-            "https://repository.jboss.org/nexus/content/repositories/releases/"
+            "http://central.maven.org/maven2/"
+//            "http://jcenter.bintray.com/",
+//            "https://oss.sonatype.org/content/repositories/releases/",
+//            "http://repo.spring.io/plugins-release/",
+//            "http://repo.spring.io/libs-milestone/",
+//            "http://repo.hortonworks.com/content/repositories/releases/",
+//            "https://maven.atlassian.com/content/repositories/atlassian-public/",
+//            "https://repository.jboss.org/nexus/content/repositories/releases/"
     };         //MAVEN中央仓库远程地址
     public static String MAVEN_CENTER_LOCAL = "D:\\cert\\";                                  //MAVEN中央本地POM文件存储路径（缓存）
 

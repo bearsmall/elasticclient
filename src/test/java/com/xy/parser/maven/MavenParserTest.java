@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -14,10 +15,10 @@ public class MavenParserTest {
     public void test1() throws IOException {
         Long start = System.currentTimeMillis();
         MavenParser mavenParser = new MavenParser();
-        mavenParser.parse("D:\\Users\\pom.xml");
+        mavenParser.parse("D:\\Users\\bearsmall\\IdeaProjects\\pmd");
         Long end = System.currentTimeMillis();
         System.out.println(end-start);
-        List<JavaDependency> javaDependencyList = mavenParser.getJavaDependencyTree();
+        Map javaDependencyList = mavenParser.getJavaDependencyTree();
         Set<JavaDependency> javaDependencySet = mavenParser.getJavaDependencySet();
         System.out.println(javaDependencyList);
         System.out.println(javaDependencySet);
