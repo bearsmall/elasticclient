@@ -89,7 +89,15 @@ public class MavenParser {
                 try {
                     model = reader.read(new FileReader(file.getAbsoluteFile()));
                     Properties pro =  model.getProperties();
-                    properties.putAll(pro);
+                    if(pro!=null&&pro.size()>0){
+                        Enumeration<?> en = pro.propertyNames();
+                        while (en.hasMoreElements()){
+                            String key = (String) en.nextElement();
+                            if(properties.getProperty(key)==null){
+                                properties.put(key,pro.getProperty(key));
+                            }
+                        }
+                    }
                     DependencyManagement dependencyManagement = model.getDependencyManagement();
                     if(dependencyManagement!=null){
                         for(Dependency dependency:dependencyManagement.getDependencies()){
@@ -131,7 +139,13 @@ public class MavenParser {
             javaDependencies = new ArrayList<JavaDependency>();
             Properties pro =  model.getProperties();
             if(pro!=null&&pro.size()>0&&deep>0) {//提取参数列表
-                properties.putAll(pro);
+                Enumeration<?> en = pro.propertyNames();
+                while (en.hasMoreElements()){
+                    String key = (String) en.nextElement();
+                    if(properties.getProperty(key)==null){
+                        properties.put(key,pro.getProperty(key));
+                    }
+                }
             }
             DependencyManagement dependencyManagement = model.getDependencyManagement();
             if(dependencyManagement!=null){//提取dependencyManagement对象
